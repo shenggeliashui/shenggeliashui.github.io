@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo</title>
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="logo-container">
+        <a href="/" class="logo">
+          
+            <img src="/images/logo.png" alt="Demo">
+          
+        </a>
+      </div>
+      <nav class="main-nav">
+        
+          <a href="/" class="nav-item">首页</a>
+        
+          <a href="/tags" class="nav-item">标签</a>
+        
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <article class="post-content">
+  <header class="post-header">
+    <h1 class="post-title"></h1>
+    <div class="post-meta">
+      <span class="post-date">2025-04-30</span>
+      
+    </div>
+  </header>
+  
+  <div class="post-body">
+    <h1 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h1><p>多元时序数据广泛应用于生活的多个场景，具有较高的实用价值，其研究领域也经历了从传统统计方法、机器学习方法到如今深度学习研究的过渡。在多元时序数据中，对常见的两类任务——插补任务和预测任务，往往涉及到类似的模型架构设计。而在现实应用中，两者的关系总是难以分割，插补任务成为对于缺失数据集的必要数据预处理，而预测任务往往充当独居价值的下游任务为我们的日常提供更多参照。基于以上的特性，为思考两者之间的信息共享和交互提供了基础。另一方面，多任务学习框架在多个领域取得了优异的进展。其特殊的模型架构，为相似和相关的任务提供了参数抑或信息的有效共享，为任务取得了更好的性能。而多任务学习框架在多元时序数据的应用上稍显空白，说明将两者结合，探索多任务学习框架为插补-预测任务带来的影响的研究极具价值。</p>
+<p>为此，本文在5个基于不同深度学习技术的模型上，对3种多元时序数据集设置4种不同的缺失率，探究独立简单的两阶段级联插补-预测模型和多任务学习插补-预测模型的性能差异和其中的作用机制。</p>
+<p>经本文的实验研究表明，在较为复杂的共享模型架构（例如Transformer架构上）多任务学习框架可以使得模型的性能有明显提升。其次，根据任务的复杂度，适当调整非共享层的复杂度和参数量可以让数据获得更优质的结果。最后，任务间损失函数的权重分配是多任务学习中需要额外关注的要点，会直接影响模型的性能。</p>
+<h1 id="绪论"><a href="#绪论" class="headerlink" title="绪论"></a>绪论</h1><ol>
+<li><h3 id="选题的意义和背景"><a href="#选题的意义和背景" class="headerlink" title="选题的意义和背景"></a>选题的意义和背景</h3><p>多元时序数据在现实生活中处处存在，在金融[1]、气象[2]、医学[3]、交通[4]、能源和电网管理等领域具有重要的研究意义。在这种场景下，我们通常会使用过往同时记录的多个时序变量来完成包括长、短期时间预测，插补任务、异常检测抑或是分类任务，应用广泛而富有价值。</p>
+<p>   对比起单变量时序数据，多元时序数据的数据结构复杂，由多个相关的单变量时序序列或者通道组成[5]。在进行缺失值插补的过程中，需要合理考虑到变量之间的复杂关系，以保证插补算法的性能和有效性。</p>
+<p>​	对多元时间序列的预测极具价值，因为特征和特征之间的变化存在潜在规律和复杂的相关性，准确的挖掘其中的模式，有利于我们对未来发展有合理的预测，并进行相关的应对措施。然而，由于多元时序数据的采集过程中充满困难和不确定性，例如隐私意识、设备、环境等因素，可能造成的数据缺失和不完整，为下游任务的展开带来困境，故而插补任务也是独具价值。</p>
+<p>​	故而，在实际应用中，插补任务通常无法和其他任务完全独立。对于具有缺失的数据，插补是数据预处理中重要的环节。但仅仅只考虑插补的效果是不够的。增强下游任务，例如预测任务的表现和数据插补误差直接的权衡也是值得关注的问题。数据插补的实际应用价值在于其对下游任务的增强作用。但下游任务对于数据的敏感程度以及与数据之间的关联关系非常复杂。端到端的“编码和预测”范式对比单纯的两阶段范式更有发展潜力[7]。</p>
+<p>近年来，随着深度学习技术的发展，多任务学习通过共享特征表示与参数优化，在自然语言处理（NLP）、计算机视觉（CV）、生物医学等领域展现出显著优势。传统单任务学习难以捕捉任务间的潜在关联，导致模型参数冗余、数据利用率低下且泛化能力不足。但在数据挖掘方面，多任务学习在常见的多元时序序列上的应用并不广泛，仍然值得探讨和研究。</p>
+<p>   综上，研究多元时序数据的插补问题和预测任务具有重要价值，在实际问题的解决中往往是先后需要遇到的问题。而多任务学习框架已经在多个领域得到了充分的应用，而在多元实际序列上还值得探究。</p>
+<h3 id="2-国内外研究现状和相关工作："><a href="#2-国内外研究现状和相关工作：" class="headerlink" title="2.国内外研究现状和相关工作："></a>2.国内外研究现状和相关工作：</h3><p>   广泛使用的经典插补方法有如均值插补、中位数插补、Last Observed Carried Forward（LOCF）[8]、ARIMA统计【】模型及其变体。虽然这些方法简单有效，但难以捕捉多元时间序列数据的时间相关性和变量之间的复杂关系。而在争对多元时间序列数据插补的深度学习上面，当前的研究可以分为预测型和生成型[7]。预测型的模型，例如（Cao等人，2018年）提出了基于RNN的插补模型BRITS，（Wu等人，2022年）提出了基于CNN的插补模型TimesNet，(Du等人，2022年）提出了基于Transformer架构的SAITS，生成型的模型例如（Fortuin等人，2019年）提出的基于VAE的插补模型[11]、（Shi等人，2018年）提出的基于GAN的插补模型SSGAN[12]。对比其经典的统计插补方法在下游任务中取得了一定优势。且生成型保证了插补的不确定性，为模型提供了概率性的解释。</p>
+<p>​    同时，深度学习也是时间序列数据预测领域的重要方法之一。（Wan 等人，2019 年）【1】引入了多变量时间卷积网络（M-TCN），该网络有效地解决了多变量时间序列预测中非周期性数据带来的挑战。（Liu 等人，2019 年）【2】提出了一种集成模型，该模型将自适应降噪器与长短期记忆（LSTM）框架相结合，融入降噪和防止过拟合策略提高模型的稳健性。（Du 等人，2020 年）【3】引入了一种时间注意力编码器 - 解码器框架。这个模型适用于各种应用，包括空气质量和电力负荷预测，凸显了基于注意力的方法在处理时间数据方面的通用性。（Han 等人，2023 年）【4】重新审视了多变量时间序列预测中的通道独立策略，强调了考虑通道间相关性的重要性。</p>
+<p>​	多任务学习因其能够利用多个任务间的共享信息来提升学习效率，受到了广泛关注。在自然语言处理领域，（Dong等人，2015 年）【6】探索了多任务学习在多语言翻译中的应用，强调了共享表示在提升不同语言翻译质量方面的潜力，突出了多任务学习在处理复杂语言任务时的通用性。（Kendall等人，2018 年）【7】通过引入一种考虑每个任务不确定性的方法，推动了对多任务学习中损失加权的理解。在手写识别领域，（Ott 等人，2022 年）【5】提出了一种新颖的多任务学习架构，该架构提高了分类和轨迹回归的性能，突出了多任务学习技术对各种应用的适应性。</p>
+<p>   考虑到当前研究的缺失，本次选题基于数据插补任务和下游任务存在的关联性，以多任务学习为基础。期望学习过程中能够减少数据插补的误差为下游任务的影响，进一步增强数据集在下游任务的数据分析能力，同时希望下游任务的训练能够为模型内部对数据缺失机制有更加充分的挖掘。</p>
+<p>【1】<a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=renzhuo_wan">Renzhuo Wan</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=shuping_mei">Shuping Mei</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=jun_wang">Jun Wang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=min_liu">Min Liu</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=fan_yang">Fan Yang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=doi.org_10.3390_electronics8080876"><em>“Multivariate Temporal Convolutional Network: A Deep Neural Networks Approach for Multivariate Time Series Forecasting”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.Electronics&q=Multivariate_Time_Series_Forecasting">ELECTRONICS</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.Electronics&q=Multivariate_Time_Series_Forecasting&year=2019">2019</a>. (IF: 5)</p>
+<p>【2】 <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=fagui_liu">Fagui Liu</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=muqing_cai">Muqing Cai</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=liangming_wang">Liangming Wang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=yunsheng_lu">Yunsheng Lu</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=doi.org_10.1109_access.2019.2900371"><em>“An Ensemble Model Based on Adaptive Noise Reducer and Over-Fitting Prevention LSTM for Multivariate Time Series Forecasting”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.IEEE_Access&q=Multivariate_Time_Series_Forecasting">IEEE ACCESS</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.IEEE_Access&q=Multivariate_Time_Series_Forecasting&year=2019">2019</a>. (IF: 3)</p>
+<p>【3】<a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=shengdong_du">Shengdong Du</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=tianrui_li">Tianrui Li</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=yan_yang">Yan Yang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=shi-jinn_horng">Shi-Jinn Horng</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=doi.org_10.1016_j.neucom.2019.12.118"><em>“Multivariate Time Series Forecasting Via Attention-based Encoder-decoder Framework”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.Neurocomputing&q=Multivariate_Time_Series_Forecasting">NEUROCOMPUTING</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.Neurocomputing&q=Multivariate_Time_Series_Forecasting&year=2020">2020</a>. (IF: 6)</p>
+<p>【4】<a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=lu_han">Lu Han</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=han-jia_ye">Han-Jia Ye</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=de-chuan_zhan">De-Chuan Zhan</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=arxiv-2304.05206"><em>“The Capacity and Robustness Trade-off: Revisiting The Channel Independent Strategy for Multivariate Time Series Forecasting”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.LG&q=Multivariate_Time_Series_Forecasting">ARXIV-CS.LG</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.LG&q=Multivariate_Time_Series_Forecasting&year=2023">2023</a>. (IF: 3)</p>
+<p>【5】<a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=felix_ott">Felix Ott</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=david_r%C3%BCgamer">David Rügamer</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=lucas_heublein">Lucas Heublein</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=bernd_bischl">Bernd Bischl</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=christopher_mutschler">Christopher Mutschler</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=doi.org_10.1109_wacv51458.2022.00131"><em>“Joint Classification and Trajectory Regression of Online Handwriting Using A Multi-Task Learning Approach”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.2022_IEEE/CVF_Winter_Conference_on_Applications_of_Computer_Vision_(WACV)&q=Multi-Task_Learning_for_Multivariate_Time_Series">2022 IEEE&#x2F;CVF WINTER CONFERENCE ON APPLICATIONS OF COMPUTER …</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.2022_IEEE/CVF_Winter_Conference_on_Applications_of_Computer_Vision_(WACV)&q=Multi-Task_Learning_for_Multivariate_Time_Series&year=2022">2022</a>. (IF: 3)</p>
+<p>【6】<a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=daxiang_dong">Daxiang Dong</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=hua_wu">Hua Wu</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=wei_he">Wei He</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=dianhai_yu">Dianhai Yu</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=haifeng_wang">Haifeng Wang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=acl-P15-1166-2015-12-30"><em>“Multi-Task Learning For Multiple Language Translation”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=acl&q=Multi-task_learning">ACL</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=acl&q=Multi-task_learning&year=2015">2015</a>. (IF: 7)</p>
+<p>【7】<a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=alex_kendall">Alex Kendall</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=yarin_gal">Yarin Gal</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=roberto_cipolla">Roberto Cipolla</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=cvpr-Kendall_Multi-Task_Learning_Using_CVPR_2018_paper.html-2018-06-17"><em>“Multi-Task Learning Using Uncertainty to Weigh Losses for Scene Geometry and Semantics”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=cvpr&q=Multi-task_learning">CVPR</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=cvpr&q=Multi-task_learning&year=2018">2018</a>. (IF: 9)</p>
+</li>
+</ol>
+<h1 id="相关工作2-0"><a href="#相关工作2-0" class="headerlink" title="相关工作2.0"></a>相关工作2.0</h1><h3 id="1-2-1时序数据插补方法"><a href="#1-2-1时序数据插补方法" class="headerlink" title="1.2.1时序数据插补方法"></a>1.2.1时序数据插补方法</h3><h4 id="1-2-1-1-基于统计的方法："><a href="#1-2-1-1-基于统计的方法：" class="headerlink" title="1.2.1.1 基于统计的方法："></a>1.2.1.1 基于统计的方法：</h4><p>在数据处理发展的早期，数据量相对较小且分析需求较为基础，人们主要采用一些简单直观的插补方法。在缺失量小且缺失值与其他变量无关的情况下，采用恒定值，比如众数进行插补的方式。均值和中位数也是常见的插补方式，例如，数据分布对称时用均值插补，存在极端值或偏态分布时用中位数插补。</p>
+<p>针对时序数据，Box等人\cite{box1970time}提出了自回归积分滑动平均模型（ARIMA），通过捕捉时序列数据中的自相关和滑动平均关系，利用时间序列的历史信息进行插补。Hamzaçebi等人\ref{hamzacebi2008improving}利用ARIMA的变体，季节性自回归积分滑动平均模型（SRIMA）捕捉了电力负荷数据的季节性模式。</p>
+<h4 id="1-2-1-2-基于机器学习的方法："><a href="#1-2-1-2-基于机器学习的方法：" class="headerlink" title="1.2.1.2 基于机器学习的方法："></a>1.2.1.2 基于机器学习的方法：</h4><p>随着数据量增加和分析要求提高，机器学习的方法在数据插补中有了更为广泛的应用。利用K最近邻（KNN）方式，根据数据点间距离找出与缺失值所在样本最相似的 K 个样本来估算缺失值，Zhang等人\ref{zhang2021imputation}通过该法对土壤的pH值进行了插补。随机森林基于多棵决策树的集成学习，可处理非线性关系，Ou\ref{ou2020missing}等人利用随机森林算法作为轴承数据集的第一次插补。</p>
+<h4 id="1-2-1-3-基于深度学习的方法："><a href="#1-2-1-3-基于深度学习的方法：" class="headerlink" title="1.2.1.3 基于深度学习的方法："></a>1.2.1.3 基于深度学习的方法：</h4><p>随着人工神经网络和深度学习的发展，基于深度学习的插补方法也逐渐兴起，当前的研究可以分为预测型和生成型\cite{wang2024deep}。最初，基于RNN的模型在处理时序数据表现了优秀的性能，Cao等人\cite{cao2018brits}提出了基于RNN的双向循环神经网络BRITS，并突显了其在插补问题上的显著优势。同时，Wu等人\cite{wu2022timesnet}提出了基于CNN的插补模型TimesNet，该模型，该模型在空气质量、电力负荷等\cite{huang2023timesnet}多个领域提高了插补的性能。随着注意力机制在自然语言领域上表现出来的优势，Du\cite{du2024saits}等人了基于Transformer架构的SAITS，在交通、医疗等多元时序数据中，将插补误差（MAE）降低30%以上。</p>
+<p>近年，基于变分自动编码器（VAE）、扩散模型或生成式对抗网络（GAN）等的生成模型在时序数据插补中也同样取得了显著进展。Fortuin等人\cite{fortuin2020gpvae}提出GP-VAE模型通过VAE结合结构化变分近似，实现了缺失数据集的非线性降维与插补。Jain等人\cite{jain2023vidim}提出了采用级联扩散模型，用于视频插值并生成了高质量结果。</p>
+<h3 id="1-2-2时序数据预测方法"><a href="#1-2-2时序数据预测方法" class="headerlink" title="1.2.2时序数据预测方法"></a>1.2.2时序数据预测方法</h3><h4 id="基于传统统计和机器学习的方法"><a href="#基于传统统计和机器学习的方法" class="headerlink" title="基于传统统计和机器学习的方法"></a>基于传统统计和机器学习的方法</h4><p>在传统统计方法领域，Mehrmolaei等人\cite{mehrmolaei2016time}的分析强调了 ARIMA 在各个应用领域的通用性，突出了其在该领域的持续重要性。随着机器学习技术的发展，Zhang等人\cite{CHEN2015435}通过将小波变换（Wavelet Transform）与支持向量回归（SVR）结合，提升交通流量预测精度。而Huang等人\cite{FILDES20221283}，也详细讨论过XGBoost在零售预测中的应用。</p>
+<h4 id="基于深度学习的方法"><a href="#基于深度学习的方法" class="headerlink" title="基于深度学习的方法"></a>基于深度学习的方法</h4><p>与插补方法类似，深度学习和神经网络为时序数据的预测带来了新的发展。Wan 等人\cite{wan2019multivariate}引入了多变量时间卷积网络（M-TCN），有效地解决了多变量时间序列预测中非周期性数据带来的挑战。Wen 等人\cite{wu2023dtransformer}提出了 LSTM-attention-LSTM 模型，该模型通过将注意力机制与长短期记忆（LSTM）网络相结合，提高了预测准确性。Wu\cite{wen2023time}等人提出了 D-Transformer 模型，该模型基于 Duffing 方程，能够准确预测各种类型的时间序列数据。随着大语言模型的兴起，Chang等人\cite{chang2023llm4ts}探讨了将大语言模型（LLMs）整合到时间序列预测中的问题，并提出了 LLM4TS 框架。最后，在模型的搭建策略上，Han 等人\cite{han2023capacity}重新审视了多变量时间序列预测中的通道独立策略，强调了考虑通道间相关性的重要性。</p>
+<p><a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=soheila_mehrmolaei">Soheila Mehrmolaei</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=mohammad_reza_keyvanpour">ohammad Reza Keyvanpour</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=doi.org_10.1109_rios.2016.7529496"><em>“Time Series Forecasting Using Improved ARIMA”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.2016_Artificial_Intelligence_and_Robotics_(IRANOPEN)&q=Time_Series_Data_Forecasting">2016 ARTIFICIAL INTELLIGENCE AND ROBOTICS (IRANOPEN)</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.2016_Artificial_Intelligence_and_Robotics_(IRANOPEN)&q=Time_Series_Data_Forecasting&year=2016">2016</a>. (IF: 3)</p>
+<p><a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=xianyun_wen">Xianyun Wen</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=weibang_li">Weibang Li</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=doi.org_10.1109_access.2023.3276628"><em>“Time Series Prediction Based on LSTM-Attention-LSTM Model”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.IEEE_Access&q=Time_Series_Data_Forecasting">IEEE ACCESS</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.IEEE_Access&q=Time_Series_Data_Forecasting&year=2023">2023</a>. (IF: 3)</p>
+<p><a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=ching_chang">Ching Chang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=wei-yao_wang">Wei-Yao Wang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=wen-chih_peng">Wen-Chih Peng</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=tien-fu_chen">Tien-Fu Chen</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=arxiv-2308.08469"><em>“LLM4TS: Aligning Pre-Trained LLMs As Data-Efficient Time-Series Forecasters”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.LG&q=Time_Series_Data_Forecasting">ARXIV-CS.LG</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.LG&q=Time_Series_Data_Forecasting&year=2023">2023</a>. (IF: 3)</p>
+<p>Huyu Wu,Ruoyu Li,Gaojie Sheng,Daniel Wilson. (2023). D-Transformer: A Deep Learning Model for Time Series Prediction. 2023 Asia-Pacific Conference on Image Processing, Electronics and Computers (IPEC).</p>
+<h3 id="1-2-3多任务学习框架"><a href="#1-2-3多任务学习框架" class="headerlink" title="1.2.3多任务学习框架"></a>1.2.3多任务学习框架</h3><h4 id="多任务学习"><a href="#多任务学习" class="headerlink" title="多任务学习"></a>多任务学习</h4><p>多任务学习旨在通过在多个任务之间共享模型结构来提高学习效率\cite{liu2021skin}，并在多个领域得以运用。在自然语言处理领域，Dong等人\cite{dong2015multi}探索了多任务学习在多语言翻译中的应用，强调了共享表示在提升不同语言翻译质量方面的潜力，突出了多任务学习在处理复杂语言任务时的通用性。在手写识别领域,Ott 等人\cite{ott2022joint}提出了一种新颖的多任务学习架构，该架构提高了分类和轨迹回归的性能，突出了多任务学习技术对各种应用的适应性。</p>
+<p>同时，多任务学习也同样存在一些值得关注的挑战。Wu等人\cite{wu2020understanding}，研究发现任务数据对齐对多任务学习的性能有着显著影响。而为了解决诸如任务不平衡之类的问题，Li等人\cite{li2020knowledge}，探索了知识蒸馏方法，让一个多任务模型学习生成与特定任务模型相似的特征。</p>
+<h4 id="多任务学习下的损失函数"><a href="#多任务学习下的损失函数" class="headerlink" title="多任务学习下的损失函数"></a>多任务学习下的损失函数</h4><p>多任务学习的一个关键方面是损失函数的设计，合理设计该函数要能有效地平衡多个任务的学习目标，强化训练效果。Jiang等人\cite{jiang2020tpg}提出了一种用户意图预测模型 TPG - DNN，采用了为多任务学习定制的自适应门控循环单元（GRU）损失函数，该机制根据数据方差动态地调整不同任务的重要性，从而增强了模型对不同任务复杂性的适应性。Ghasemi-Naraghi\cite{ghasemi2022logse}等人，基于同方差随机不确定性，设计了与任务有关的自动加权策略。Dan等人\cite{dan2022multi}在用于多方言语音识别的多任务变压器模型中，提出了一种自适应交叉熵损失函数，自动平衡任务学习，并增强模型识别多种方言的稳健性。</p>
+<p><a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=lina_liu">Lina Liu</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=ying_y_tsui">Ying Y Tsui</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=mrinal_mandal">Mrinal Mandal</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=pubmed-34460517"><em>“Skin Lesion Segmentation Using Deep Learning with Auxiliary Task”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.Journal_of_imaging&q=Multi-task_learning">JOURNAL OF IMAGING</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.Journal_of_imaging&q=Multi-task_learning&year=2021">2021</a>. (IF: 3)</p>
+<p><a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=sen_wu">Sen Wu</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=hongyang_r._zhang">Hongyang R. Zhang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=christopher_r%C3%A9">Christopher Ré</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=arxiv-2005.00944"><em>“Understanding And Improving Information Transfer In Multi-Task Learning”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.LG&q=Multi-task_learning">ARXIV-CS.LG</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.LG&q=Multi-task_learning&year=2020">2020</a>. (IF: 4)</p>
+<p> <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=wei-hong_li">Wei-Hong Li</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=hakan_bilen">Hakan Bilen</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=arxiv-2007.06889"><em>“Knowledge Distillation For Multi-task Learning”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.CV&q=Multi-task_learning">ARXIV-CS.CV</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.CV&q=Multi-task_learning&year=2020">2020</a>. (IF: 4)</p>
+<p> <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=jingxing_jiang">Jingxing Jiang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=zhubin_wang">Zhubin Wang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=fei_fang">Fei Fang</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=binqiang_zhao">Binqiang Zhao</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=arxiv-2008.02122"><em>“TPG-DNN: A Method For User Intent Prediction Based On Total Probability Formula And GRU Loss With Multi-task Learning”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.LG&q=Multi-task_learning_loss_function">ARXIV-CS.LG</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=arxiv-cs.LG&q=Multi-task_learning_loss_function&year=2020">2020</a>.</p>
+<p><a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=zhengjia_dan">Zhengjia Dan</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=yue_zhao">Yue Zhao</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=xiaojun_bi">Xiaojun Bi</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=licheng_wu">Licheng Wu</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/isearch/?name=qiang_ji">Qiang Ji</a>; <a target="_blank" rel="noopener" href="https://www.paperdigest.org/paper/?paper_id=pubmed-37420449"><em>“Multi-Task Transformer with Adaptive Cross-Entropy Loss for Multi-Dialect Speech Recognition”</em></a>,  <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.Entropy_(Basel,_Switzerland)&q=Multi-task_learning_loss_function">ENTROPY (BASEL, SWITZERLAND)</a>, <a target="_blank" rel="noopener" href="https://www.paperdigest.org/review/?topic=journal.Entropy_(Basel,_Switzerland)&q=Multi-task_learning_loss_function&year=2022">2022</a>. (IF: 3)</p>
+<p>综合以上三部分的内容，可见时序数据的插补任务和预测任务的发展历程和涉及到的技术十分相似，这为它们共同搭建多任务学习框架奠定了基础。其次，目前对于多任务学习框架下的时序数据跨任务训练研究相对空白，而多任务学习框架已在其他多个领域发挥作用，为本文的研究提供很好的出发点。最后，在多任务学习框架下，要注意损失函数之间的加权，平衡任务之间的学习，尽可能发挥该框架的优势。</p>
+<h1 id="准备工作："><a href="#准备工作：" class="headerlink" title="准备工作："></a><strong>准备工作</strong>：</h1><ol>
+<li><h3 id="多元时间序列"><a href="#多元时间序列" class="headerlink" title="多元时间序列"></a>多元时间序列</h3></li>
+</ol>
+<p>多元时间序列是指由多个相关的时间序列变量组成的数据集合，是具有时间维度和变量维度的二维数据结构。其特征有单一变量对于时间的依赖性【1】，包括一些长期依赖关系，如长期趋势性、季节性和周期性，如数据预处理当中的自相关函数和偏相关函数的计算，差分操作等，均是争对这一特征进行的平稳化操作，对于时间颗粒度较小的数据集，可能由测量误差、外部干扰或其他不可预测的因素引起噪声【2】。同时变量之间也存在着复杂的相互依赖，例如在工业数据诞生的过程中，不同设备的运行状态存在互相影响【3】。除此以外，由于变量之间的差异性，以及变量维度的相互独立性，在深度学习的数据嵌入和模型设计阶段带来了额外考虑的必要性。例如，已被证实在部分模型里带来效果的通道独立（<strong>Channel-Independence</strong>，CI）策略【4】【5】，和保留变量维度的特殊数据嵌入算法【6】。在实验过程中，充分考虑以上特征，使得实验有效，实验结果具备价值。</p>
+<p>【1】Amal Saadallah,Hanna Mykula,Katharina Morik. (2023). Online Adaptive Multivariate Time Series Forecasting..</p>
+<p>【2】Sharmeen Khan,M. A. Alam,N. R. S. Ram,Khushboo Mirza,V. Chowdary. (2020). NOISE REDUCTION OF TIME-SERIES SATELLITE DATA USING VARIOUS DE-NOISING ALGORITHMS..</p>
+<p>【3】王亚权. (2023). 基于混合模型的多元时序异常检测算法研究..</p>
+<p>【4】Nie, Y., Nguyen, N. H., Sinthong, P., &amp; Kalagnanam, J. (2023). A time series is worth 64 words: Long-term forecasting with transformers. <em>International Conference on Learning Representations (ICLR)</em>.</p>
+<p>【5】Zeng, A., Chen, M., Zhang, L., &amp; Xu, Q. (2023). Are transformers effective for time series forecasting? <em>Proceedings of the AAAI Conference on Artificial Intelligence</em>.</p>
+<p>【6】mordenTCN</p>
+<h3 id="2-数据归一化"><a href="#2-数据归一化" class="headerlink" title="2.数据归一化"></a>2.数据归一化</h3><p>时间序列数据可能包含不同类型的变量，如温度、湿度、销售额等，它们的数值范围和尺度差异很大。不同特征的量纲差异可能会导致梯度下降路径震荡，激活函数输入过大而饱和，或引发梯度爆炸【7】。在当今众多先进的深度学习模型中，归一化是前置必要条件，常规操作为将转换到均值为 0，方差为 1 的分布。仿射变换也是数据归一化中需要考虑的操作【8】。标准的归一化将所有数据强制转换到一个固定的分布上，然而不同的变量或者特征之间可能存在差异性的分布特性，仿射变换可以根据数据的实际分布特征，通过引入线性变换，将其分布情况进行调整。</p>
+<p>【7】Nikolaos Passalis,Anastasios Tefas,Juho Kanniainen,Moncef Gabbouj,Alexandros Iosifidis. (2020). Deep Adaptive Input Normalization for Time Series Forecasting. IEEE transactions on neural networks and learning systems(9).</p>
+<p>【8】Kim, T., Kim, J., Tae, Y., Park, C., Choi, J.-H., &amp; Choo, J. (2022). Reversible instance normalization for accurate time-series forecasting against distribution shift. <em>International Conference on Learning Representations (ICLR)</em>.</p>
+<h3 id="3-数据嵌入"><a href="#3-数据嵌入" class="headerlink" title="3.数据嵌入"></a>3.数据嵌入</h3><p>时间序列的数据嵌入包括时间嵌入和数据嵌入，旨在将高维、复杂的时间序列数据转换为低维、有意义的向量表示。以下介绍在本文中将会使用的嵌入方法：</p>
+<p>（1）采用补丁Patch的方式：用当前时间点的临近时间点的集合作为该点的特征表示。在PatchTST、ModernTCN、SegRNN等模型中均有采用。</p>
+<p>（2）位置嵌入：</p>
+<p>（2）采用时间特征的时间嵌入方法：将时间例如“年&#x2F;月&#x2F;日 时：分”，在不同的时间维度如”年“或者”月“进行单独的层次的数值化，实现了一种固定编码的时间嵌入方式，方便模型理解数据的周期性、趋势性等特征。</p>
+<h3 id="4-回顾窗口长度、起始序列长度、预测长度"><a href="#4-回顾窗口长度、起始序列长度、预测长度" class="headerlink" title="4.回顾窗口长度、起始序列长度、预测长度"></a>4.回顾窗口长度、起始序列长度、预测长度</h3><p>三者是在对于时间序列的深度学习中较为常见和混淆的名词。其中回顾窗口长度，又称历史序列长度，决定模型能看到多少过去的时间步数据来学习模式。起始序列通常用于解码阶段，作为解码器初始输入的已知标签长度，解码器将会结合编码器的输出进行下一步任务。预测长度，则指模型要预测的未来时间步数量。</p>
+<h3 id="5-评估指标："><a href="#5-评估指标：" class="headerlink" title="5.评估指标："></a>5.评估指标：</h3><p>（1）均方误差：$\text{MSE} &#x3D; \frac{1}{n} \sum_{i&#x3D;1}^n (y_i - \hat{y}_i)^2$  平方运算，使得其对较大的误差更为敏感。MSE值越小，模型性能越好。平方函数连续可导，适合梯度下降优化，常用于回归分析中作为损失函数。在本文中同样作为loss函数的优化目标。</p>
+<p>（2）平均绝对误差：$\text{MAE} &#x3D; \frac{1}{n} \sum_{i&#x3D;1}^n |y_i - \hat{y}_i|$ 对于异常值不敏感，但结果可以与原始数据的量纲一致，便于理解和与实际数据比较。</p>
+<p>（3）均方根误差：$\text{RMSE} &#x3D; \sqrt{MSE} $  解决MSE量纲问题，更接近实际误差范围。</p>
+<p>（4）平均绝对百分比误差：$\text{MAPE} &#x3D; \frac{100%}{n} \sum_{i&#x3D;1}^n \left| \frac{y_i - \hat{y}_i}{y_i} \right|$  适用于相对误差比绝对值更重要的场景。</p>
+<ol start="6">
+<li><h3 id="多任务学习框架"><a href="#多任务学习框架" class="headerlink" title="多任务学习框架"></a>多任务学习框架</h3><p>多任务学习是一种重要的机器学习方式。通过多个相关任务间的信息共享机制，显著提升了模型的泛化能力和学习效率。【9】通过促进相关任务之间的信息和特征交换，达到隐式迁移学习的效果。特别在数据稀缺的任务中，可以同步提高多个任务的学习效果。多任务学习框架，已经在图像处理、语音识别、自然语言处理等领域【10】【11】拥有了广泛的应用。在本文中，插补任务属于数据科学领域的数据预处理部分，而预测任务属于大多数多元时序数据的下游任务。为了防止盲目追求拟合插补任务，而忽略其与下游任务联系，提出了插补-预测双任务学习框架，探究这类学习框架在数据科学领域的实用价值。具体的网络架构范式有：</p>
+<p>（1）硬参数共享：多个任务共享网络中的底层参数，针对不同的任务指定不同的高层分支。减少模型参数量，提高计算速率，适合任务高度相关的场景。</p>
+<p>（2）软参数共享：不同的任务拥有自己的模型参数，通过正则化约束或者注意力机制使得这些参数相似。</p>
+<p>在多任务学习框架中，很重要的一点是损失函数的加权机制。若只是简单相加，不同任务的损失函数在量纲上的不一致，导致其对总任务的损失贡献不一致，可能会阻碍某一任务的有效训练，或者导致多个任务间的训练速度不一致。常见的解决方法有：设置超参数，可以通过网格搜索的方式选择较优参数。</p>
+</li>
+</ol>
+<p>【9】张钰,刘建伟,左信. (2020). 多任务学习. 《计算机学报》(7).</p>
+<p>【10】Yan Zhao,Xiuying Wang,Tongtong Che,Guoqing Bao,Shuyu Li. (2023). Multi-task deep learning for medical image computing and analysis: A review. Computers in biology and medicine.</p>
+<p>【11】王伟杰. (2022). 多任务学习在关系抽取任务上的应用. (Doctoral dissertation, 华东师范大学).</p>
+<ol start="7">
+<li><h3 id="两个重要任务"><a href="#两个重要任务" class="headerlink" title="两个重要任务"></a>两个重要任务</h3><p>（1）插补任务：</p>
+<p>因为复杂的缺失模式，例如随机缺失、连续缺失（如传感器故障等）等导致的时间序列矩阵存在缺失值。插补任务即是根据保留下来的数据，对缺失值进行重构的任务。由于不同的缺失机制较大程度影响插值，本文中只应用随机缺失机制，这也是通常作为衡量插补模型的缺失机制。</p>
+<p>为了改变原始数据缺失率，可以通过掩码矩阵，人为进行随机掩码。利用根据缺失率（例：0.125，0.25），随机生成含有对应缺失率的掩码0-1矩阵。掩码矩阵和输入矩阵相乘可得缺失数据集。</p>
+<p>在插补任务中，Loss函数应为缺失部分的原始值和模型插补值的MSE。</p>
+<p>$Loss&#x3D;MSE(x(mask&#x3D;0),output_imputation(make&#x3D;0))$</p>
+<p>（2）预测任务：</p>
+<p>基于现实情况的考虑，预测任务的输入应该是插补模型的插补结果，具体表达如下：</p>
+<p>$input_forecast&#x3D;mask*x+(1-mask)*output_imputation$</p>
+</li>
+</ol>
+<p>根据插补后的序列，预测模型进行训练，Loss函数应为预测值和真实值的MSE。</p>
+<p>$Loss&#x3D;MSE(output_forcast,y)$</p>
+<h1 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h1><p>为了更好的探究此类插补-预测的多任务学习框架是否能够在数据科学领域具有实用价值，我们将探索三种不同类型的插补&#x2F;预测模型，包括：基于RNN，基于CNN和基于Transformer架构的5个流行模型。以探究不同量级的参数个数、模型机制对于这个猜想的影响。</p>
+<ol>
+<li><h3 id="基于RNN的模型"><a href="#基于RNN的模型" class="headerlink" title="基于RNN的模型"></a>基于RNN的模型</h3><p>SegRNN【1】是一个基于RNN变体GRU【2】的多元时序数据处理模型，旨在解决RNN系列模型的大量多次循环迭代影响收敛的问题，以捕获长期依赖关系，同时实现一定程度的并行，加快因为递归关系而导致模型训练速率受限的问题。SegRNN是编码器-解码器结构，在编码阶段以用序列分段（segment）迭代代替原始的时间点态迭代，在解码阶段使用多步预测策略实现一次迭代，避免了预测误差的累计。而随着回顾窗口的增大，SegRNN的性能指标也逐渐变好。值得一提的是，选择一个相对较大但适当的段长度是保证该模型性能的关键一点。</p>
+<p>虽然SegRNN是针对长期时间序列预测（LTSF）提出的，但将其在解码器对于未来数据的预测更改为对于真实完整数据的预测即可实现插补任务。</p>
+</li>
+<li><h3 id="基于CNN的模型"><a href="#基于CNN的模型" class="headerlink" title="基于CNN的模型"></a>基于CNN的模型</h3><p>ModernTCN【3】是一个纯卷积结构，是对传统的时间卷积网络（TCN）的现代化改造。通过大内核和结构优化提升了感受野，在效率和性能的追求上找到了平衡。</p>
+<p>在数据嵌入方面，通过补丁的方式，用当前时间点的临近时间点的集合作为该点的特征表示，同时保留了变量维度。在单变量单特征的时间依赖层面，使用大内核深度可分离卷积进行关系捕捉。在单变量的特征交互和变量之间的特征交互层面，通过点卷积进行关系捕捉。</p>
+<p>该模型适用于包括插补和预测等的5大常见的时间序列任务。主要通过更改高维度的线性层实现。</p>
+</li>
+<li><h3 id="基于Transformer模型"><a href="#基于Transformer模型" class="headerlink" title="基于Transformer模型"></a>基于Transformer模型</h3><p>（1）第一个是最为基础的Transformer【4】模型。Transformer架构最初为了自然语言处理任务而设计，通过自注意力机制捕获序列中不同位置之间的依赖关系，对于时间序列这种存在短期和长期依赖关系的序列同样具有应用价值。</p>
+<p>在数据嵌入维度，对于时间序列的数值、位置和时间分别进行嵌入，方法大致如第三部分所言，此处不再赘述。在插补任务中采用的编码器-仿射层的架构，而在预测任务中采用编码器-解码器的架构。</p>
+<p>（2）第二种是基于Transformer编码器的PatchTST【5】，同样通过补丁操作捕捉某个时间步长的语义信息。然后基于通道独立（CI）策略，让多个变量单独进行正向传播，但共享共一个模型骨架参数。拼接后的结果通过仿射层进行变换。同样，通过更换不同的高纬度仿射层，可以实现包括插补、预测等常见的时间序列任务。</p>
+<p>（3）第三个是针对长序列时间序列预测，基于Transformer的informer【6】。使用ProbSparse自注意力机制，减少冗余的查询-键对计算，进而降低复杂度。同时通过卷积池化操作使得数据规模逐级减半，堆叠不同输入尺度的编码器形成金字塔结构。在解码器部分，则使用了生成式解码器，一次性预测，提高推理速度。</p>
+</li>
+<li><h3 id="两种模型框架"><a href="#两种模型框架" class="headerlink" title="两种模型框架"></a>两种模型框架</h3><p>将上面列举的具有代表性的多元时间序列深度学习框架作为基元，搭建两种框架完成插补和预测两项任务，实验将进一步基于这两种模型框架对比和总结。</p>
+</li>
+</ol>
+<p>（1）两阶段分步进行插补和预测任务，两个任务使用完全无关和独立的模型，彼此的训练和参数更新互不影响，简称为级联联版本。模型1将负责插补任务的拟合，对输入的数据进行重构。有效的原始数据和插补重构的数据根据式【】进行融合，成为预测任务的输出。模型2将负责预测任务，将融合后的数据作为输入，对未来时间步的数据进行预测。对于使用类似Transformer解码器的架构，在解码器部分额外输入融合后的起始序列。图展现了该方法的模型架构。</p>
+<img src="C:\Users\86136\Desktop\学习资料（总）\毕设\chap4_model1.png" alt="chap4_model1" style="zoom: 33%;" />
+
+<p>（2）多任务框架下完成插补和预测任务。采用硬参数共享的方式，两个任务同步训练，简称为多任务版本。在底层，使用同一部分参数作为共享参数，然后根据不同的任务设计不同的非共享层&#x2F;解码器。对于使用类似Transformer解码器的架构，在预测任务解码器部分额外输入，经过插补任务输出并于原始有效数据融合后，的起始序列。图展示了该方法的模型架构。</p>
+<img src="C:\Users\86136\Desktop\学习资料（总）\毕设\chap4_model2.png" alt="chap4_model2" style="zoom:33%;" />
+
+<ol start="5">
+<li><h3 id="多任务框架下的损失函数"><a href="#多任务框架下的损失函数" class="headerlink" title="多任务框架下的损失函数"></a>多任务框架下的损失函数</h3></li>
+</ol>
+<p>当设计到不同的任务时，如何设计和管理各任务的损失函数是一个值得关注的点。</p>
+<p>如果只是简单的加和，不同任务之间的损失函数在不同量级，导致模型更加关注大量级的任务。使用线性求和的方法，不同权重在一定程度上代表了改任务的重视程度，如何找到一组合适的超参数通常采用类似网格搜索的方法浪费人力和物力。而不同任务的训练速度不一致，若不能给到任务一个合适的权重，可能导致部分任务训练过拟合，而另外的任务还处于训练初期的问题。</p>
+<p>考虑以上因素，本文将选择两种损失函数动态权重调整策略，帮助模型更加有效得运行。</p>
+<ol>
+<li><h4 id="基于损失比例的动态加权法"><a href="#基于损失比例的动态加权法" class="headerlink" title="基于损失比例的动态加权法"></a>基于损失比例的动态加权法</h4><p>$α&#x3D;\frac{loss_1}{loss_1+loss_2}$ </p>
+<p>$loss&#x3D;α⋅loss_1+(1−<em>α</em>)⋅loss_2$</p>
+<p>在这张方法下，当loss_1显著大于loss_2时，会优先训练task1，相反会优先训练loss_2。同时也可以起到损失量级的归一化。该方法的计算复杂度低，计算负担可以忽略不计。</p>
+</li>
+<li><h4 id="基于梯度归一化的动态加权法【7】"><a href="#基于梯度归一化的动态加权法【7】" class="headerlink" title="基于梯度归一化的动态加权法【7】"></a>基于梯度归一化的动态加权法【7】</h4><p>这个方法是由赵等【7】提出的，能够解决不同任务的损失尺度或复杂度导致梯度差异大的问题。使得任务的学习速度差异不会收敛过快或者过慢，引发过拟合或者欠拟合的情况。</p>
+<p>参数列表：<br>$$<br>w_i：第i个任务的权重\<br>G^{(i)}_W(t):第t个时间步里，第i个任务对于共享层参数W的梯度范数。\<br>\bar{G}_W(t)：第t个时间步里，所有任务对于共享层参数W的平均梯度范数。\<br>\tilde{L_i}(t):定义为每个task的训练速率。\<br>r_i(t)：定义为逆训练率。该值越高，越鼓励任务训练得越快。\<br>\alpha:超参数。表示为对训练速率差异的平衡力度，\alpha越大，说明力度越大。在任务之间的相似度越高时，其值越<br>定义权重更新的损失函数为:\<br>Loss&#x3D;\sum_i |G^{(i)}_W(t)-\bar{G}_W(t)·[r_i(t)]^\alpha|<br>$$</p>
+<p>初始化$w_i(0)&#x3D;1\ \forall i $，$W&#x3D;$ 共享层参数，$\alpha$</p>
+<p>输入：t时间步的$T$个任务的Loss列表 $Losses$</p>
+<p>对于$Losses$里的每个$Loss_i$:</p>
+<p>​	计算 $Weight_Loss_i(t)&#x3D;w_i(t)*Loss_i(t)$</p>
+<p>​	对$W$求梯度：$G^{(i)}_W(t) &#x3D;\left| \nabla_W  Weight_Loss_i(t)  \right|_2$</p>
+<p>​	计算训练速率：$\tilde{L}_i(t) &#x3D; \frac{Loss_i(t)}{Loss_i(0)}$</p>
+<p>求所有梯度范数平均值：$\overline{G}<em>W(t) &#x3D; \mathbb{E}</em>{\text{task}} \left[ G_W^{(i)}(t) \right]$，并将其视作常数</p>
+<p>求任务训练速率平均值：$\overline{L}<em>i(t) &#x3D; \mathbb{E}</em>{\text{task}} \left[ \tilde{L}_i(t) \right]$</p>
+<p>计算每个任务的相对逆训练率：$r_i(t) &#x3D; \frac{\tilde{L}_i(t)}{\overline{L}_i(t)} \forall i$</p>
+<p>计算$L_{grad}&#x3D;\sum_i \left\vert G^{(i)}_W(t)-\bar{G}_W(t)·[r_i(t)]^\alpha\right\vert $</p>
+<p>计算$w_i$的更新梯度：$\nabla_{w_i} L_{\text{grad}}$</p>
+<p>根据$\nabla_{w_i} L_{\text{grad}}$ 更新$w_i(t) \mapsto w_i(t + 1) \ $</p>
+<p>归一化$w_i(t + 1)$，让$\sum_i w_i(t + 1)&#x3D;T$</p>
+</li>
+</ol>
+<p>6.回归输出层</p>
+<p>在多任务框架下的回归任务中，不同的回归输出层会为不同的任务带来不同的实验效果。</p>
+<ol>
+<li><p>线性层</p>
+<p>又称为全连接层（Fully Connected Layer)，是在神经网络训练中十分常见的组件。实际上就是对输入数据进行线性变换。根据输入$x\in R^n$,目标输出$y\in R^m$,我们线性层包含一个权重矩阵$W \in R^{m×n}$以及一个偏执量$b \in R^m$，即如式【】所示。</p>
+<p>$y &#x3D; Wx+b$</p>
+</li>
+<li><p>多层感知机（MLP)</p>
+<p>堆叠多个线性层，并在每个线性层后加入非线性激活函数，使其能够学习输入和输出之间复杂的非线性映射关系，即如式【】所示。</p>
+<p>$z_i &#x3D; W_ia_{i-1}+b_i$</p>
+<p>$a_i&#x3D;\sigma (z_i)$</p>
+</li>
+<li><p>多头注意力机制和线性投影层</p>
+<p>由一个多头注意力层和线性层组成。其中，多头注意力机制是对传统注意力机制的扩展。”多头“即通过在不同的表示子空间中捕捉输入序列之间的依赖关系，提高模型的表达能力。</p>
+<ol>
+<li>经过线性变换获得查询Q、键K、值V  $Q&#x3D;XW_Q,K&#x3D;XW_k,V&#x3D;XW_v$</li>
+<li>将 <em>Q</em>、<em>K</em>、<em>V</em> 分别分割成 <em>h</em> 个头，并进行多头计算注意力分数：$\text{Attention}(Q_i, K_i, V_i) &#x3D; \text{softmax}\left(\frac{Q_i K_i^\top}{\sqrt{d_k}}\right) V_i$</li>
+<li>进行拼接和投影$\text{MultiHead}(Q,K,V) &#x3D; \text{Concat}(\text{Attention}(head_1,head_2,…,head_h))W^O$</li>
+</ol>
+<p>将多头注意力层的输出输入到投影层，将其投影到目标输入的维度，为序列数据的回归任务提供了一种有效的解决方案。</p>
+</li>
+</ol>
+<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><h3 id="1-数据集"><a href="#1-数据集" class="headerlink" title="1.数据集"></a>1.数据集</h3><p><strong>ETT</strong>(Electricity Transformer Temperature)开源数据集 \url{<a target="_blank" rel="noopener" href="https://github.com/zhouhaoyi/ETDataset">zhouhaoyi&#x2F;ETDataset: The Electricity Transformer dataset is collected to support the further investigation on the long sequence forecasting problem.</a>}从中国两个不同县的电力变压器中收集，广泛运用于电力系统监测，记录了2016&#x2F;07&#x2F;01~2018&#x2F;06&#x2F;26 两年时间里无缺失样本包括油温数据（Oil Temperature）和其他六个不同类型的外部功率负载特征（如表xx所示）。该数据集有多种子集，包括ETTh(每小时采样)共17420个样本和ETTm(每15分钟采样)共69680个样本。ETTm数据集相较于ETTh表现出更显著的短期波动，这些波动可能由电网负载突变、传感器噪声或环境干扰引起。</p>
+<p>划分方式：前12个月的数据划分为训练集，中间4个月划分为验证集，后4个月划分为测试集。</p>
+<p><strong>Weather天气</strong>数据集，是马普生物地球化学研究所气象站采集气象时间序列数据集，包括2020年1月1日到2021年1月1日，每间隔10分钟无缺失记录的，包括空气温度和湿度等21个气象指标，共52696个样本数据。数据的划分方式为：前70%为训练集，中间10%为验证集，最后20%为测试集。</p>
+<p><strong>ECL</strong>（Electricity Consumption Load）数据集，由UCI机器学习库提供，覆盖了2016年7月份至2019年7月历史用电数据，包含370个客户记录。每15分钟记录一次用电量，总数据量约26304条。该数据集会体现显日周期（早晚高峰）、周周期（工作日与周末差异）和年周期（季节性波动）等特性。数据集的划分方式：前70%为训练集，中间10%为验证集，最后20%为测试集。</p>
+<h3 id="2-实验细节"><a href="#2-实验细节" class="headerlink" title="2.实验细节"></a>2.实验细节</h3><p>所有实验统一设置隐藏层的维度为128，回顾窗口为96，起始序列（对于采用Transformer解码器的模型）为48，预测长度为24。SegRNN设置为48的段长度，一个GRU层和两个线性分类头。ModernTCN设置为补丁长度设置为8，划分步幅设置为4，超大卷积核设置为边长71。PatchTST设置补丁长度为16，步长为8。PatchTST、Transformer和Informer的编码器堆叠层数均为3。其中，在GradNorm算法中最好使用最后一层共享层参数，为了保持五个模型的统一性，在所有模型的共享部分的最后一层额外添加了一个输入通道和输出通道均为 128 的 1×1 逐点卷积，额外添加的部分则会参与到GradNorm算法的计算中。</p>
+<p>此外，实验中采用的优化器是Adam优化器，学习率调整策略为最大学习率为0.001的单周期调整策略，同时采用早停机制，其中最大忍受轮数为5。</p>
+<h3 id="3-实验结果和分析"><a href="#3-实验结果和分析" class="headerlink" title="3.实验结果和分析"></a>3.实验结果和分析</h3><p>我们将两类模型对于两个任务在三个数据集上的运行结果总结在了表【】和表【】中。其中表【】表示的是插补任务，而表【】表示的是预测任务。两类模型中较好的结果，我们用粗体进行了标注。</p>
+<p>观察上述表中，我们可以看到：</p>
+<p>（1）在插补任务中，几乎所有模型均在级联版本中表现得更好。其中在SegRNN和ModernTCN中，级联版本比多任务版本分别减少了19.6%，13.2%的MAE，效果差别较大，在Transformer、PatchTST和Informer中，级联版本比多任务版本分别减少了4.8%，8.9%和6.3%，效果差别较小。总体而言，对比起预测任务，插补任务整体的指标效果更好，具有明显差异，这也证明了在多任务的损失函数上进行的额外考虑是必要的。</p>
+<p>（2）在预测任务中，SegRNN的级联版本比多任务版本表现得更为优异，平均使得MAE减少了大约8.62%。在ModernTCN模型的数据中，可以注意到级联版本的MSE更小，但MAE更大，多任务版本的MAE减少了1.4%，这可能说明多任务版本存在一部分较大的误差，从而增大了MSE值。而对于PatchTST两个模型而言，级联版本比多任务版本的表现稍好一点，级联版本平均使得MSE减少了大约9.7%。而在Transformer和Informer两个模型中，多任务版本的模型明显优于级联版本的模型，使得MSE分别减少了大约37.0%和27.8% ，其中Transformer和Informer两个模型的多任务版本也几乎是在预测任务下的最优结果。</p>
+<p>ETTh1</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.339</strong></td>
+<td><strong>0.382</strong></td>
+<td>0.351</td>
+<td>0.392</td>
+<td><strong>0.330</strong></td>
+<td><strong>0.368</strong></td>
+<td>0.359</td>
+<td>0.393</td>
+<td>0.496</td>
+<td>0.457</td>
+</tr>
+<tr>
+<td><strong>0.349</strong></td>
+<td><strong>0.390</strong></td>
+<td>0.381</td>
+<td>0.422</td>
+<td>0.378</td>
+<td>0.400</td>
+<td><strong>0.369</strong></td>
+<td><strong>0.399</strong></td>
+<td>0.461</td>
+<td>0.452</td>
+</tr>
+<tr>
+<td><strong>0.368</strong></td>
+<td><strong>0.410</strong></td>
+<td>0.456</td>
+<td>0.478</td>
+<td>0.393</td>
+<td>0.416</td>
+<td><strong>0.382</strong></td>
+<td><strong>0.409</strong></td>
+<td>0.496</td>
+<td>0.464</td>
+</tr>
+<tr>
+<td><strong>0.388</strong></td>
+<td><strong>0.427</strong></td>
+<td>0.527</td>
+<td>0.518</td>
+<td>0.397</td>
+<td>0.424</td>
+<td><strong>0.397</strong></td>
+<td><strong>0.418</strong></td>
+<td>0.465</td>
+<td>0.454</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.277</strong></td>
+<td><strong>0.363</strong></td>
+<td><strong>0.321</strong></td>
+<td><strong>0.372</strong></td>
+<td>0.326</td>
+<td>0.375</td>
+<td>0.394</td>
+<td>0.432</td>
+<td><strong>0.230</strong></td>
+<td><strong>0.333</strong></td>
+</tr>
+<tr>
+<td><strong>0.223</strong></td>
+<td><strong>0.327</strong></td>
+<td><strong>0.323</strong></td>
+<td><strong>0.375</strong></td>
+<td>0.340</td>
+<td>0.384</td>
+<td>0.495</td>
+<td>0.475</td>
+<td><strong>0.259</strong></td>
+<td><strong>0.361</strong></td>
+</tr>
+<tr>
+<td><strong>0.142</strong></td>
+<td><strong>0.271</strong></td>
+<td><strong>0.322</strong></td>
+<td><strong>0.374</strong></td>
+<td>0.353</td>
+<td>0.395</td>
+<td>0.457</td>
+<td>0.456</td>
+<td><strong>0.242</strong></td>
+<td><strong>0.345</strong></td>
+</tr>
+<tr>
+<td><strong>0.194</strong></td>
+<td><strong>0.322</strong></td>
+<td><strong>0.338</strong></td>
+<td><strong>0.381</strong></td>
+<td>0.348</td>
+<td>0.398</td>
+<td>0.457</td>
+<td>0.457</td>
+<td><strong>0.274</strong></td>
+<td><strong>0.366</strong></td>
+</tr>
+</tbody></table>
+<p>ETTm1:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.047</strong></td>
+<td><strong>0.144</strong></td>
+<td>0.111</td>
+<td>0.233</td>
+<td><strong>0.018</strong></td>
+<td><strong>0.089</strong></td>
+<td>0.035</td>
+<td>0.122</td>
+<td>0.017</td>
+<td>0.086</td>
+</tr>
+<tr>
+<td><strong>0.056</strong></td>
+<td><strong>0.159</strong></td>
+<td>0.121</td>
+<td>0.243</td>
+<td><strong>0.022</strong></td>
+<td><strong>0.096</strong></td>
+<td>0.031</td>
+<td>0.117</td>
+<td>0.021</td>
+<td>0.095</td>
+</tr>
+<tr>
+<td><strong>0.082</strong></td>
+<td><strong>0.196</strong></td>
+<td>0.153</td>
+<td>0.273</td>
+<td><strong>0.026</strong></td>
+<td><strong>0.105</strong></td>
+<td>0.037</td>
+<td>0.128</td>
+<td>0.026</td>
+<td>0.108</td>
+</tr>
+<tr>
+<td><strong>0.131</strong></td>
+<td><strong>0.239</strong></td>
+<td>0.205</td>
+<td>0.312</td>
+<td><strong>0.031</strong></td>
+<td><strong>0.116</strong></td>
+<td>0.044</td>
+<td>0.139</td>
+<td>0.032</td>
+<td>0.120</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.017</strong></td>
+<td><strong>0.084</strong></td>
+<td><strong>0.055</strong></td>
+<td><strong>0.158</strong></td>
+<td>0.062</td>
+<td>0.169</td>
+<td><strong>0.020</strong></td>
+<td><strong>0.092</strong></td>
+<td>0.027</td>
+<td>0.112</td>
+</tr>
+<tr>
+<td><strong>0.021</strong></td>
+<td><strong>0.095</strong></td>
+<td><strong>0.059</strong></td>
+<td><strong>0.167</strong></td>
+<td>0.065</td>
+<td>0.174</td>
+<td>0.083</td>
+<td>0.198</td>
+<td><strong>0.038</strong></td>
+<td><strong>0.135</strong></td>
+</tr>
+<tr>
+<td><strong>0.025</strong></td>
+<td><strong>0.104</strong></td>
+<td><strong>0.066</strong></td>
+<td><strong>0.177</strong></td>
+<td>0.070</td>
+<td>0.185</td>
+<td><strong>0.038</strong></td>
+<td><strong>0.129</strong></td>
+<td>0.047</td>
+<td>0.150</td>
+</tr>
+<tr>
+<td><strong>0.032</strong></td>
+<td><strong>0.117</strong></td>
+<td><strong>0.069</strong></td>
+<td><strong>0.185</strong></td>
+<td>0.101</td>
+<td>0.229</td>
+<td>0.055</td>
+<td><strong>0.156</strong></td>
+<td><strong>0.053</strong></td>
+<td>0.157</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.303</strong></td>
+<td><strong>0.348</strong></td>
+<td>0.321</td>
+<td>0.363</td>
+<td><strong>0.252</strong></td>
+<td><strong>0.322</strong></td>
+<td>0.261</td>
+<td>0.318</td>
+<td>0.282</td>
+<td>0.331</td>
+</tr>
+<tr>
+<td><strong>0.312</strong></td>
+<td><strong>0.360</strong></td>
+<td>0.333</td>
+<td>0.377</td>
+<td><strong>0.276</strong></td>
+<td><strong>0.342</strong></td>
+<td>0.303</td>
+<td>0.341</td>
+<td>0.301</td>
+<td>0.343</td>
+</tr>
+<tr>
+<td><strong>0.310</strong></td>
+<td><strong>0.355</strong></td>
+<td>0.376</td>
+<td>0.409</td>
+<td><strong>0.304</strong></td>
+<td><strong>0.364</strong></td>
+<td>0.349</td>
+<td>0.355</td>
+<td>0.297</td>
+<td>0.347</td>
+</tr>
+<tr>
+<td><strong>0.331</strong></td>
+<td><strong>0.376</strong></td>
+<td>0.433</td>
+<td>0.449</td>
+<td><strong>0.308</strong></td>
+<td><strong>0.373</strong></td>
+<td>0.332</td>
+<td>0.355</td>
+<td>0.318</td>
+<td>0.361</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.031</strong></td>
+<td><strong>0.109</strong></td>
+<td><strong>0.215</strong></td>
+<td><strong>0.296</strong></td>
+<td>0.225</td>
+<td>0.302</td>
+<td>0.288</td>
+<td>0.341</td>
+<td><strong>0.134</strong></td>
+<td><strong>0.239</strong></td>
+</tr>
+<tr>
+<td><strong>0.043</strong></td>
+<td><strong>0.131</strong></td>
+<td><strong>0.218</strong></td>
+<td><strong>0.298</strong></td>
+<td>0.230</td>
+<td>0.309</td>
+<td>0.239</td>
+<td>0.313</td>
+<td><strong>0.126</strong></td>
+<td><strong>0.240</strong></td>
+</tr>
+<tr>
+<td><strong>0.071</strong></td>
+<td><strong>0.161</strong></td>
+<td><strong>0.235</strong></td>
+<td><strong>0.310</strong></td>
+<td>0.237</td>
+<td>0.318</td>
+<td>0.319</td>
+<td>0.356</td>
+<td><strong>0.161</strong></td>
+<td><strong>0.273</strong></td>
+</tr>
+<tr>
+<td><strong>0.074</strong></td>
+<td><strong>0.171</strong></td>
+<td><strong>0.231</strong></td>
+<td><strong>0.310</strong></td>
+<td>0.304</td>
+<td>0.386</td>
+<td>0.305</td>
+<td>0.360</td>
+<td><strong>0.259</strong></td>
+<td><strong>0.324</strong></td>
+</tr>
+</tbody></table>
+<p>weather:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.040</strong></td>
+<td><strong>0.087</strong></td>
+<td>0.049</td>
+<td>0.104</td>
+<td>0.035</td>
+<td>0.064</td>
+<td><strong>0.032</strong></td>
+<td><strong>0.056</strong></td>
+<td><strong>0.045</strong></td>
+<td><strong>0.115</strong></td>
+</tr>
+<tr>
+<td><strong>0.050</strong></td>
+<td><strong>0.113</strong></td>
+<td>0.062</td>
+<td>0.131</td>
+<td>0.037</td>
+<td>0.068</td>
+<td><strong>0.036</strong></td>
+<td><strong>0.062</strong></td>
+<td><strong>0.094</strong></td>
+<td><strong>0.193</strong></td>
+</tr>
+<tr>
+<td><strong>0.053</strong></td>
+<td><strong>0.107</strong></td>
+<td>0.063</td>
+<td>0.126</td>
+<td><strong>0.032</strong></td>
+<td><strong>0.058</strong></td>
+<td>0.038</td>
+<td>0.064</td>
+<td><strong>0.154</strong></td>
+<td><strong>0.250</strong></td>
+</tr>
+<tr>
+<td><strong>0.072</strong></td>
+<td><strong>0.116</strong></td>
+<td>0.078</td>
+<td>0.129</td>
+<td><strong>0.034</strong></td>
+<td><strong>0.061</strong></td>
+<td>0.042</td>
+<td>0.073</td>
+<td><strong>0.283</strong></td>
+<td><strong>0.338</strong></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0.064</td>
+<td>0.140</td>
+<td><strong>0.047</strong></td>
+<td><strong>0.102</strong></td>
+<td>0.052</td>
+<td>0.112</td>
+<td><strong>0.039</strong></td>
+<td><strong>0.097</strong></td>
+<td>0.042</td>
+<td>0.109</td>
+</tr>
+<tr>
+<td>0.097</td>
+<td>0.202</td>
+<td><strong>0.037</strong></td>
+<td><strong>0.078</strong></td>
+<td>0.065</td>
+<td>0.141</td>
+<td><strong>0.041</strong></td>
+<td><strong>0.103</strong></td>
+<td>0.064</td>
+<td>0.157</td>
+</tr>
+<tr>
+<td>0.182</td>
+<td>0.282</td>
+<td><strong>0.044</strong></td>
+<td><strong>0.099</strong></td>
+<td>0.048</td>
+<td>0.099</td>
+<td><strong>0.103</strong></td>
+<td><strong>0.203</strong></td>
+<td>0.120</td>
+<td>0.229</td>
+</tr>
+<tr>
+<td>0.288</td>
+<td>0.345</td>
+<td><strong>0.047</strong></td>
+<td><strong>0.105</strong></td>
+<td>0.051</td>
+<td>0.109</td>
+<td>0.294</td>
+<td>0.351</td>
+<td><strong>0.244</strong></td>
+<td><strong>0.330</strong></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.098</strong></td>
+<td><strong>0.139</strong></td>
+<td>0.107</td>
+<td>0.159</td>
+<td><strong>0.104</strong></td>
+<td><strong>0.14</strong>7</td>
+<td>0.114</td>
+<td>0.161</td>
+<td><strong>0.127</strong></td>
+<td><strong>0.180</strong></td>
+</tr>
+<tr>
+<td><strong>0.113</strong></td>
+<td>0.175</td>
+<td>0.115</td>
+<td><strong>0.172</strong></td>
+<td><strong>0.104</strong></td>
+<td><strong>0.157</strong></td>
+<td>0.117</td>
+<td>0.167</td>
+<td>0.140</td>
+<td>0.206</td>
+</tr>
+<tr>
+<td><strong>0.110</strong></td>
+<td><strong>0.160</strong></td>
+<td>0.122</td>
+<td>0.183</td>
+<td><strong>0.114</strong></td>
+<td><strong>0.176</strong></td>
+<td>0.121</td>
+<td>0.170</td>
+<td>0.187</td>
+<td>0.252</td>
+</tr>
+<tr>
+<td><strong>0.130</strong></td>
+<td><strong>0.185</strong></td>
+<td>0.134</td>
+<td>0.185</td>
+<td>0.150</td>
+<td>0.230</td>
+<td><strong>0.124</strong></td>
+<td><strong>0.174</strong></td>
+<td>0.274</td>
+<td>0.311</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0.148</td>
+<td>0.221</td>
+<td><strong>0.112</strong></td>
+<td><strong>0.154</strong></td>
+<td>0.126</td>
+<td>0.190</td>
+<td>0.170</td>
+<td>0.231</td>
+<td><strong>0.079</strong></td>
+<td><strong>0.126</strong></td>
+</tr>
+<tr>
+<td><strong>0.086</strong></td>
+<td><strong>0.149</strong></td>
+<td><strong>0.115</strong></td>
+<td><strong>0.160</strong></td>
+<td>0.152</td>
+<td>0.237</td>
+<td>0.151</td>
+<td>0.210</td>
+<td><strong>0.077</strong></td>
+<td><strong>0.138</strong></td>
+</tr>
+<tr>
+<td><strong>0.076</strong></td>
+<td><strong>0.149</strong></td>
+<td><strong>0.119</strong></td>
+<td><strong>0.168</strong></td>
+<td>0.127</td>
+<td>0.191</td>
+<td>0.183</td>
+<td>0.252</td>
+<td><strong>0.089</strong></td>
+<td><strong>0.163</strong></td>
+</tr>
+<tr>
+<td><strong>0.077</strong></td>
+<td><strong>0.174</strong></td>
+<td><strong>0.119</strong></td>
+<td><strong>0.170</strong></td>
+<td>0.127</td>
+<td>0.195</td>
+<td>0.283</td>
+<td>0.307</td>
+<td><strong>0.100</strong></td>
+<td><strong>0.181</strong></td>
+</tr>
+</tbody></table>
+<p>ecl</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.073</strong></td>
+<td><strong>0.185</strong></td>
+<td>0.091</td>
+<td>0.209</td>
+<td><strong>0.061</strong></td>
+<td><strong>0.174</strong></td>
+<td>0.065</td>
+<td>0.178</td>
+<td><strong>0.082</strong></td>
+<td><strong>0.197</strong></td>
+</tr>
+<tr>
+<td><strong>0.082</strong></td>
+<td><strong>0.198</strong></td>
+<td>0.103</td>
+<td>0.224</td>
+<td><strong>0.074</strong></td>
+<td><strong>0.192</strong></td>
+<td>0.080</td>
+<td>0.197</td>
+<td><strong>0.096</strong></td>
+<td><strong>0.213</strong></td>
+</tr>
+<tr>
+<td><strong>0.093</strong></td>
+<td><strong>0.210</strong></td>
+<td>0.115</td>
+<td>0.237</td>
+<td><strong>0.084</strong></td>
+<td><strong>0.204</strong></td>
+<td>0.090</td>
+<td>0.210</td>
+<td><strong>0.113</strong></td>
+<td><strong>0.230</strong></td>
+</tr>
+<tr>
+<td><strong>0.106</strong></td>
+<td><strong>0.224</strong></td>
+<td>0.124</td>
+<td>0.247</td>
+<td><strong>0.094</strong></td>
+<td><strong>0.217</strong></td>
+<td>0.099</td>
+<td>0.221</td>
+<td><strong>0.133</strong></td>
+<td><strong>0.247</strong></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0.085</td>
+<td>0.202</td>
+<td>0.076</td>
+<td><strong>0.208</strong></td>
+<td><strong>0.076</strong></td>
+<td>0.209</td>
+<td><strong>0.081</strong></td>
+<td><strong>0.197</strong></td>
+<td>0.085</td>
+<td>0.203</td>
+</tr>
+<tr>
+<td>0.099</td>
+<td>0.216</td>
+<td><strong>0.084</strong></td>
+<td><strong>0.218</strong></td>
+<td>0.088</td>
+<td>0.226</td>
+<td><strong>0.096</strong></td>
+<td><strong>0.213</strong></td>
+<td>0.097</td>
+<td>0.216</td>
+</tr>
+<tr>
+<td>0.115</td>
+<td>0.231</td>
+<td>0.097</td>
+<td><strong>0.233</strong></td>
+<td><strong>0.096</strong></td>
+<td>0.234</td>
+<td><strong>0.112</strong></td>
+<td><strong>0.229</strong></td>
+<td>0.113</td>
+<td>0.232</td>
+</tr>
+<tr>
+<td>0.135</td>
+<td>0.249</td>
+<td>0.108</td>
+<td>0.246</td>
+<td><strong>0.107</strong></td>
+<td><strong>0.246</strong></td>
+<td>0.140</td>
+<td>0.255</td>
+<td><strong>0.133</strong></td>
+<td><strong>0.249</strong></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.146</strong></td>
+<td><strong>0.243</strong></td>
+<td>0.160</td>
+<td>0.262</td>
+<td>0.130</td>
+<td>0.243</td>
+<td><strong>0.127</strong></td>
+<td><strong>0.236</strong></td>
+<td>0.139</td>
+<td>0.249</td>
+</tr>
+<tr>
+<td><strong>0.150</strong></td>
+<td><strong>0.247</strong></td>
+<td>0.171</td>
+<td>0.276</td>
+<td>0.140</td>
+<td>0.254</td>
+<td><strong>0.138</strong></td>
+<td><strong>0.251</strong></td>
+<td>0.140</td>
+<td>0.253</td>
+</tr>
+<tr>
+<td><strong>0.160</strong></td>
+<td><strong>0.260</strong></td>
+<td>0.181</td>
+<td>0.287</td>
+<td>0.155</td>
+<td>0.270</td>
+<td><strong>0.144</strong></td>
+<td><strong>0.258</strong></td>
+<td>0.144</td>
+<td>0.255</td>
+</tr>
+<tr>
+<td><strong>0.106</strong></td>
+<td><strong>0.224</strong></td>
+<td>0.192</td>
+<td>0.297</td>
+<td>0.181</td>
+<td>0.293</td>
+<td><strong>0.149</strong></td>
+<td><strong>0.264</strong></td>
+<td><strong>0.149</strong></td>
+<td><strong>0.257</strong></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.138</strong></td>
+<td><strong>0.244</strong></td>
+<td><strong>0.151</strong></td>
+<td><strong>0.268</strong></td>
+<td>0.164</td>
+<td>0.285</td>
+<td>0.199</td>
+<td>0.301</td>
+<td><strong>0.135</strong></td>
+<td><strong>0.249</strong></td>
+</tr>
+<tr>
+<td><strong>0.138</strong></td>
+<td><strong>0.246</strong></td>
+<td><strong>0.155</strong></td>
+<td><strong>0.274</strong></td>
+<td>0.176</td>
+<td>0.299</td>
+<td>0.166</td>
+<td>0.272</td>
+<td><strong>0.140</strong></td>
+<td><strong>0.255</strong></td>
+</tr>
+<tr>
+<td><strong>0.140</strong></td>
+<td><strong>0.250</strong></td>
+<td><strong>0.163</strong></td>
+<td><strong>0.280</strong></td>
+<td>0.184</td>
+<td>0.307</td>
+<td>0.172</td>
+<td>0.280</td>
+<td><strong>0.148</strong></td>
+<td><strong>0.263</strong></td>
+</tr>
+<tr>
+<td>0.152</td>
+<td>0.268</td>
+<td><strong>0.171</strong></td>
+<td><strong>0.287</strong></td>
+<td>0.194</td>
+<td>0.317</td>
+<td>0.177</td>
+<td>0.284</td>
+<td><strong>0.159</strong></td>
+<td><strong>0.273</strong></td>
+</tr>
+</tbody></table>
+<p><strong>倘若从，插补任务作为下游任务(预测任务）的数据预处理，能够在下游任务中表现得更好是值得我们去探究的。为了进一步理清其中的机制，我们对这五种模型的模型参数进行了统计，统计结果如表【】所示。</strong></p>
+<p><strong>SegRNN是基本线性层和GRU的模型，对比起其他的模型，计算量和计算复杂程度低，模型的参数量少，当多任务框架下使用硬参数共享时，由于从单个任务变成了多任务，任务难度变大而模型参数过少，难以学习到有效的特征表示，故而指标难以提高，在我们的实验中，也看到SegRNN在多任务框架下两个任务的表现都稍显差劲。</strong></p>
+<p><strong>而ModernTCN是基于卷积操作和扩大的卷积核的模型，最后的输出层是线性层，故随着需要预测的数值的数量变大而参数变多。PatchTST主干是基于Transformer的编码器，采用了通道分离的策略，而输出层也同样是线性层。多任务框架下，ModernTCN可能会由于自身卷积操作的局限性和输出层的简单操作而具有劣势，PatchTST对比Transformer和Informer模型也同样在输出层具有劣势，这可能是多任务框架不能有效产生效果的原因。</strong></p>
+<p><strong>而Transformer和Informer模型无论在共享层的参数数量上和模型的计算复杂度上都是最为庞大的，这对于多任务的复杂性拥有天然的适配性。值得注意的是，哪怕在缺失率为50%的情况下，插补任务的指标依然明显优于预测任务的指标，说明了预测任务在任务复杂度上大于插补任务。在这两个模型的非共享层上可以看到预测头的参数量远远大于插补头，预测头采用的解码器结构的复杂程度能够让其学到两个任务的不同，而多任务框架下这两个模型在预测任务上的性能也有了很大的提高（分别提高大约37.0%和27.8% ），这说明在保证共享层复杂性的程度上依然要对非共享层的结构予以关注，共享特征交互和非共享特征的单独学习可以让模型更好地完成任务。</strong></p>
+<p><strong>为了进一步完善这个结论，以Informer模型为例，我们适当地复杂插补头，重新进行实验来查看变化。采用如【】所言的三种回归输出来给更近Informer的插补头，得到的实验结果如表：</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th><strong>MSE</strong></th>
+<th><strong>MAE</strong></th>
+<th><strong>MSE</strong></th>
+<th><strong>MAE</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>0.045</strong></td>
+<td><strong>0.146</strong></td>
+<td><strong>0.072</strong></td>
+<td><strong>0.188</strong></td>
+<td><strong>0.044</strong></td>
+<td><strong>0.144</strong></td>
+<td><strong>0.0538</strong></td>
+<td><strong>0.161</strong></td>
+<td><strong>0.046</strong></td>
+<td><strong>0.151</strong></td>
+<td><strong>0.052</strong></td>
+<td><strong>0.159</strong></td>
+</tr>
+<tr>
+<td><strong>0.064</strong></td>
+<td><strong>0.173</strong></td>
+<td><strong>0.071</strong></td>
+<td><strong>0.184</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><strong>0.068</strong></td>
+<td><strong>0.184</strong></td>
+<td><strong>0.069</strong></td>
+<td><strong>0.186</strong></td>
+</tr>
+<tr>
+<td><strong>0.088</strong></td>
+<td><strong>0.205</strong></td>
+<td><strong>0.102</strong></td>
+<td><strong>0.224</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><strong>0.099</strong></td>
+<td><strong>0.222</strong></td>
+<td><strong>0.095</strong></td>
+<td><strong>0.222</strong></td>
+</tr>
+<tr>
+<td><strong>0.122</strong></td>
+<td><strong>0.244</strong></td>
+<td><strong>0.130</strong></td>
+<td><strong>0.251</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><strong>0.141</strong></td>
+<td><strong>0.2744</strong></td>
+<td><strong>0.119</strong></td>
+<td><strong>0.250</strong></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th><strong>Models</strong></th>
+<th><strong>SegRNN</strong></th>
+<th><strong>ModernTCN</strong></th>
+<th><strong>Transformer</strong></th>
+<th><strong>PatchTST</strong></th>
+<th><strong>Informer</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>共享层参数量</strong></td>
+<td><strong>103104</strong></td>
+<td><strong>527269</strong></td>
+<td><strong>400896</strong></td>
+<td><strong>417664</strong></td>
+<td><strong>417408</strong></td>
+</tr>
+<tr>
+<td><strong>插补头参数量</strong></td>
+<td><strong>3096</strong></td>
+<td><strong>295008</strong></td>
+<td><strong>903</strong></td>
+<td><strong>147552</strong></td>
+<td><strong>903</strong></td>
+</tr>
+<tr>
+<td><strong>预测头参数量</strong></td>
+<td><strong>3096</strong></td>
+<td><strong>73752</strong></td>
+<td><strong>203143</strong></td>
+<td><strong>36888</strong></td>
+<td><strong>203143</strong></td>
+</tr>
+</tbody></table>
+<h3 id="4-损失函数加权法的有效性验证"><a href="#4-损失函数加权法的有效性验证" class="headerlink" title="4.损失函数加权法的有效性验证"></a><strong>4.损失函数加权法的有效性验证</strong></h3><p><strong>如\ref【】所言，我们对这两种动态加权方法，在ModerTCN、PatchTST和Informer三个模型上进行了不同缺失率的对比实验。</strong></p>
+<p><strong>从两个插补和预测任务的实验结果来看，如表【】所示。基于梯度归一的动态加权法，对比基于损失的动态加权法，在三个不同模型和四种不同的缺失率的情况下，MSE和MAE指标有着不同程度的优化。以MSE为例，分别平均提高了14.67%，2.84%，11.24%，4.81%，-4.2%，20.84%。尽管Informer模型因为使用了基于梯度归一的动态加权法，在插补任务上性能有小幅度下降，但是其预测任务有了较大程度的提高，说明了该方法在平衡任务之间的训练效果方面的效果。所以，我仍然认为梯度归一的动态加权法相比之下更好。</strong></p>
+<table>
+<thead>
+<tr>
+<th><strong>任务</strong></th>
+<th><strong>Imputation</strong></th>
+<th></th>
+<th><strong>forecast</strong></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>方法</strong></td>
+<td><strong>基于损失比例</strong></td>
+<td><strong>基于梯度归一</strong></td>
+<td><strong>基于损失比例</strong></td>
+<td><strong>基于梯度归一</strong></td>
+</tr>
+<tr>
+<td><strong>Metrics</strong></td>
+<td><strong>MSE | MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+</tr>
+<tr>
+<td><strong>0.125</strong></td>
+<td><strong>0.089 | 0.200</strong></td>
+<td><strong>0.076  |0.185</strong></td>
+<td><strong>0.364 | 0.393</strong></td>
+<td><strong>0.359 |0.393</strong></td>
+</tr>
+<tr>
+<td><strong>0.25</strong></td>
+<td><strong>0.095 | 0.209</strong></td>
+<td><strong>0.076 | 0.189</strong></td>
+<td><strong>0.379 |0.405</strong></td>
+<td><strong>0.369| 0.399</strong></td>
+</tr>
+<tr>
+<td><strong>0.375</strong></td>
+<td><strong>0.120 | 0.233</strong></td>
+<td><strong>0.105 |0.220</strong></td>
+<td><strong>0.392 | 0.410</strong></td>
+<td><strong>0.382 | 0.409</strong></td>
+</tr>
+<tr>
+<td><strong>0.5</strong></td>
+<td><strong>0.147 | 0.257</strong></td>
+<td><strong>0.130 |0.244</strong></td>
+<td><strong>0.417 |0.426</strong></td>
+<td><strong>0.397 | 0.418</strong></td>
+</tr>
+</tbody></table>
+<p>*<strong>ETTh1 数据集下 ModernTCN 应用两种动态加权方法的实验指标差异</strong></p>
+<table>
+<thead>
+<tr>
+<th><strong>任务</strong></th>
+<th><strong>Imputation</strong></th>
+<th></th>
+<th><strong>forecast</strong></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>方法</strong></td>
+<td><strong>基于损失比例</strong></td>
+<td><strong>基于梯度归一</strong></td>
+<td><strong>基于损失比例</strong></td>
+<td><strong>基于梯度归一</strong></td>
+</tr>
+<tr>
+<td><strong>Metrics</strong></td>
+<td><strong>MSE | MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+</tr>
+<tr>
+<td><strong>0.125</strong></td>
+<td><strong>0.123 | 0.239</strong></td>
+<td><strong>0.111  |0.229</strong></td>
+<td><strong>0.356 | 0.387</strong></td>
+<td><strong>0.326 |0.375</strong></td>
+</tr>
+<tr>
+<td><strong>0.25</strong></td>
+<td><strong>0.134 | 0.253</strong></td>
+<td><strong>0.116 | 0.233</strong></td>
+<td><strong>0.351 |0.391</strong></td>
+<td><strong>0.340| 0.384</strong></td>
+</tr>
+<tr>
+<td><strong>0.375</strong></td>
+<td><strong>0.143 |0.265</strong></td>
+<td><strong>0.129 |0.248</strong></td>
+<td><strong>0.367 | 0.404</strong></td>
+<td><strong>0.353 | 0.395</strong></td>
+</tr>
+<tr>
+<td><strong>0.5</strong></td>
+<td><strong>0.167 | 0.287</strong></td>
+<td><strong>0.147 |0.266</strong></td>
+<td><strong>0.362 |0.406</strong></td>
+<td><strong>0.348 | 0.398</strong></td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th><strong>任务</strong></th>
+<th><strong>Imputation</strong></th>
+<th></th>
+<th><strong>forecast</strong></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>方法</strong></td>
+<td><strong>基于损失比例</strong></td>
+<td><strong>基于梯度归一</strong></td>
+<td><strong>基于损失比例</strong></td>
+<td><strong>基于梯度归一</strong></td>
+</tr>
+<tr>
+<td><strong>Metrics</strong></td>
+<td><strong>MSE | MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+<td><strong>MSE |MAE</strong></td>
+</tr>
+<tr>
+<td><strong>0.125</strong></td>
+<td><strong>0.061 | 0.174</strong></td>
+<td><strong>0.072  |0.188</strong></td>
+<td><strong>0.346 | 0.408</strong></td>
+<td><strong>0.230 |0.333</strong></td>
+</tr>
+<tr>
+<td><strong>0.25</strong></td>
+<td><strong>0.077 | 0.195</strong></td>
+<td><strong>0.071 | 0.184</strong></td>
+<td><strong>0.248 |0.347</strong></td>
+<td><strong>0.289| 0.361</strong></td>
+</tr>
+<tr>
+<td><strong>0.375</strong></td>
+<td><strong>0.095 |0.215</strong></td>
+<td><strong>0.102 |0.224</strong></td>
+<td><strong>0.364 | 0.406</strong></td>
+<td><strong>0.242 | 0.345</strong></td>
+</tr>
+<tr>
+<td><strong>0.5</strong></td>
+<td><strong>0.131 | 0.252</strong></td>
+<td><strong>0.130 |0.251</strong></td>
+<td><strong>0.408 |0.434</strong></td>
+<td><strong>0.274 | 0.366</strong></td>
+</tr>
+</tbody></table>
+<p><strong>从模型训练的收敛程度而言，由图【】和图【】可见，在其他参数相同的情况下，基于损失的动态加权法下早停机制被触发在大约15000个迭代以后；与之相对的，基于梯度归一的动态加权法，在估计5500个迭代后就触发了早停体制。这说明，利用基于梯度归一的动态加权法可以让模型在训练过程中同时关注并及时调整两个任务的训练进度，防止长期过度关注其中一个任务而忽视另外一个，引发的总体训练周期变长，使得大大节省了计算资源和时间。</strong></p>
+<p><strong><img src="C:\Users\86136\AppData\Roaming\Typora\typora-user-images\image-20250403171752580.png" alt="image-20250403171752580"></strong></p>
+<p><strong><img src="C:\Users\86136\AppData\Roaming\Typora\typora-user-images\image-20250403171723716.png" alt="image-20250403171723716"></strong></p>
+<p><strong>倘若以两种方式下的插补和预测任务的损失函数分别做差，得到的结果取前1000次迭代如图【】所示。与损失法相比，梯度法在迭代到大约100-600次时，会更加关注插补任务，体现为梯度法在这部分损失函数下载得更快。而在迭代到大于550次时，梯度法相较于损失法在预测任务上基于的关注度开始提升。该变化验证了梯度法的作用和效果。</strong></p>
+<p><strong><img src="C:\Users\86136\Desktop\学习资料（总）\毕设\chap5_impuation_sub.png" alt="chap5_impuation_sub"></strong></p>
+<p><strong><img src="C:\Users\86136\Desktop\学习资料（总）\毕设\chap5_forecast_sub.png" alt="chap5_forecast_sub"></strong></p>
+<p><strong>综上，基于梯度的动态加权法更加适合在本框架下进行多任务损失函数的加权，其动态处理模型对各个任务的重视程度，协调各个任务的训练进度，提高了模型整体的训练效率，节省了时间和计算资源，并且获得了更好的实验结果。</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>SegRNN</strong></th>
+<th><strong>ModernTCN</strong></th>
+<th><strong>Transformer</strong></th>
+<th><strong>PatchTST</strong></th>
+<th><strong>Informer</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td></td>
+<td><strong>103104</strong></td>
+<td><strong>527269</strong></td>
+<td><strong>400896</strong></td>
+<td><strong>417664</strong></td>
+<td><strong>417408</strong></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>3096</strong></td>
+<td><strong>295008</strong></td>
+<td><strong>903</strong></td>
+<td><strong>147552</strong></td>
+<td><strong>903</strong></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>3096</strong></td>
+<td><strong>73752</strong></td>
+<td><strong>203143</strong></td>
+<td><strong>36888</strong></td>
+<td><strong>203143</strong></td>
+</tr>
+</tbody></table>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a><strong>总结</strong></h1><p><strong>在本文中，我们将在多元时间序列领域常见了两个任务——插补任务和预测任务与在计算机视觉等领域有着充分应用价值的多任务学习框架进行了结合。在现实中，这两个任务总是相伴而生，对于拥有缺失数据的数据集而言，插补任务相当于数据预处理中不可缺失的一环，而预测任务则被更多的认为是下游任务。由于下游任务对于数据的敏感性，插补任务和下游任务的信息共享，似乎成为了更好地实现这两个任务的突破口，而多任务学习框架为达到此目的，提供了一个不错的体系。</strong></p>
+<p><strong>为了探究多任务学习框架下，两类任务是否能够取得刚好的效果，本文在5个基于不同深度学习技术的模型上，进行了广泛的实现。涉及到五个不同的模型：基于RNN的SegRNN，基于CNN的ModernTCN，基于Transformer的基础Transformer、PatchTST、Informer架构；4中不同的数据缺失率：12.5%、25%、37.5%、50%；以及3种不同的数据集ETTh1、ETTm1和Weather。为了让多任务学习框架能够更好的发挥作用，本文有探讨了两种不同的动态加权损失函数的方法——基于损失比例和基于基于梯度的动态加权法GradNorm，同样进行了广泛的实验验证。实验将在单个模型的级联版本和多任务学习版本之间进行比较。</strong></p>
+<p><strong>最终，根据实验结果表明，在Transformer和Informer模型下，多任务学习框架预测任务有了很大程度的改进（指标分别提高了大约27.9%和23.0%），而在仅仅使用线性层进行非共享层输出的情况下，两者的插补任务有了小幅度的性能下降（分别下降了4.0%和4.9%），但也是在5个模型中下降幅度最小的。其余三个模型在多任务框架下并不能拥有更好的表现。为了进一步探究原因，本文将插补任务的线性输出层换成了更为复杂的多头注意力机制，使得多任务学习版本下的模型在缺失率为37.5%和50%时性能反超级联模型，并缩小了在缺失率为12.5%和25%时两者的差距。而梯度的动态加权法GradNorm的实验效果也比简单的基于损失比的加权法性能要好的多，最大的性能提高高达20.84%。</strong></p>
+<p><strong>综上，在共享主干的复杂程度足够高的情况下，多任务学习框架能够很好得实现任务之间信息的交互，同时若保证非共享层之间的模型复杂程度，使得模型独立学习不同任务的信息，可以使得多任务学习模型对比级联模型在插补和预测两个任务下拥有更好的结果。其次，不同任务的损失函数加权是多任务学习框架下需要十分注意的点，采取更加复杂和科学的加权法可以更大幅度发挥多任务学习框架的优势。</strong></p>
+<h1 id="致谢"><a href="#致谢" class="headerlink" title="致谢"></a><strong>致谢</strong></h1><p><strong>在中大的本科生涯，犹如一场五味杂陈的奇妙旅程，在欢笑、崩溃、迷茫与焦虑的交织中，悄然迎来终点。回首这四年的光阴，我接触了一个崭新的领域，和代码、bug、ddl度过了其中大半的时光。值得高兴的是，伴随我年龄增长的，还有我在分析、抗压、解决问题的能力以及心智上的成熟。</strong></p>
+<p><strong>这一路走来，我满心感恩。我无法忘记在四年里，陪伴我度过每一个或黯淡或高光时刻、在困境中向我伸出援手、在沮丧时给予我鼓励的朋友、老师和家人，是我前行路上最温暖的力量。也很庆幸有中大这个平台，能够让我与他们相逢。在此，我想向他们献上最诚挚的谢意，愿每个人的生活都如同我这份精心打磨的毕业论文一般，顺遂无虞。</strong></p>
+<p><strong>本科四年，虽然有努力地学习课程知识，却在学术科研方面初出茅庐。面对本科毕业设计里的难题，我也曾迷茫不知所措。但很感谢我的指导老师，戴智明老师。他在我无措时为我指点迷津，拨云见日；在我提出自己的想法时，予以鼓励；在我无知时，提供了细心的教诲和独具方向性的指导；那扇尘封的科研大门，也在此刻徐徐打开。我也由衷地感谢戴老师在这段时间里对我的帮助，希望老师科研工作也能闪闪发光。</strong></p>
+
+  </div>
+  
+  
+</article>
+
+
+  <div class="post-navigation">
+    
+      <a href="/2025/04/30/hello-world/" class="post-nav-prev">
+        <span class="post-nav-label">上一篇</span>
+        <span class="post-nav-title">Hello World</span>
+      </a>
+    
+    
+      <a href="/2025/04/29/%E5%8D%9A%E5%AE%A2md%E6%96%87%E6%A1%A3%E6%A0%BC%E5%BC%8F/" class="post-nav-next">
+        <span class="post-nav-label">下一篇</span>
+        <span class="post-nav-title">博客md文档格式</span>
+      </a>
+    
+  </div>
+
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="copyright">
+        &copy; 2025 John Doe
+      </div>
+      
+        <div class="footer-links">
+          
+            <a href="/about" class="footer-link">关于我们</a>
+          
+            <a href="/contact" class="footer-link">联系方式</a>
+          
+            <a href="/privacy" class="footer-link">隐私政策</a>
+          
+            <a href="/terms" class="footer-link">服务条款</a>
+          
+        </div>
+      
+    </div>
+  </footer>
+
+  
+    
+      <script src="/js/main.js"></script>
+    
+  
+</body>
+</html>

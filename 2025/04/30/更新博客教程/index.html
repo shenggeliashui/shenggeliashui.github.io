@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo - 更新博客教程</title>
+  <link rel="stylesheet" href="/css/style.css">
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="logo-container">
+        <a href="/" class="logo">
+          
+            <img src="/images/logo.png" alt="Demo">
+          
+        </a>
+      </div>
+      <nav class="main-nav">
+        
+          <a href="/" class="nav-item">首页</a>
+        
+          <a href="/tags" class="nav-item">标签</a>
+        
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <article class="post-content">
+  <header class="post-header">
+    <h1 class="post-title">更新博客教程</h1>
+    <div class="post-meta">
+      <span class="post-date">2025-04-30</span>
+      
+    </div>
+  </header>
+  
+  <div class="post-body">
+    <ol>
+<li>创建一个源项目仓库（源代码专用，不用于部署）<br>比如新建一个 GitHub 仓库叫：</li>
+</ol>
+<p>复制<br>编辑<br>hexo-blog-source<br>然后把你本地的 Hexo 源代码（包括 package.json, _config.yml, themes&#x2F;, source&#x2F; 等）推送上去：</p>
+<p>bash<br>复制<br>编辑<br>cd 你的Hexo项目目录<br>git init<br>git remote add origin <a target="_blank" rel="noopener" href="https://github.com/%E4%BD%A0%E7%9A%84%E7%94%A8%E6%88%B7%E5%90%8D/hexo-blog-source.git">https://github.com/你的用户名/hexo-blog-source.git</a><br>git add .<br>git commit -m “init blog source”<br>git push -u origin main<br>✅ 2. 将 hexo d 继续部署到 shenggeliashui.github.io<br>也就是说：</p>
+<p>hexo-blog-source：多人协作 + 撰写文章 + 开发主题 + 执行 hexo d</p>
+<p>shenggeliashui.github.io：只用来托管生成后的静态文件（不要手动修改）</p>
+<p>✅ 3. 协作者如何参与<br>别人只需要 clone 你的 hexo-blog-source 项目，然后本地执行：</p>
+<p>bash<br>复制<br>编辑<br>npm install<br>hexo s<br>就可以本地开发、写文章、改样式，然后：</p>
+<p>bash<br>复制<br>编辑<br>hexo d   # 部署到你的 .github.io 仓库<br>前提是他们有部署权限，或者通过 PR 提交你来部署。</p>
+
+  </div>
+  
+  
+</article>
+
+
+  <div class="post-navigation">
+    
+    
+      <a href="/2025/04/30/%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A/" class="post-nav-next">
+        <span class="post-nav-label">下一篇</span>
+        <span class="post-nav-title"></span>
+      </a>
+    
+  </div>
+
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="copyright">
+        &copy; 2025 John Doe
+      </div>
+      
+        <div class="footer-links">
+          
+            <a href="/about" class="footer-link">关于我们</a>
+          
+            <a href="/contact" class="footer-link">联系方式</a>
+          
+            <a href="/privacy" class="footer-link">隐私政策</a>
+          
+            <a href="/terms" class="footer-link">服务条款</a>
+          
+        </div>
+      
+    </div>
+  </footer>
+
+  
+    
+      <script src="/js/main.js"></script>
+    
+  
+</body>
+</html>
